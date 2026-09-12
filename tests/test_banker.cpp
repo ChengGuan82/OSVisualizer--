@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include <algorithm>
 using namespace osv;
+bool isSafe(std::vector<int>&, std::vector<std::vector<int>>&, std::vector<std::vector<int>>&, std::vector<std::vector<int>>&);
 void require(bool value, const char* text) { if (!value) throw std::runtime_error(text); }
 void rejects(const BankerInput& v) {
     try { BankerAlgorithm().run(v); } catch (const std::invalid_argument&) { return; }
@@ -47,6 +48,8 @@ int main() {
             }
             r = BankerAlgorithm().run(v);
             require(r.safe == oracle(v,v.available), "exhaustive oracle agreement");
+            auto legacy=v; auto need=r.need;
+            require(r.safe == isSafe(legacy.available,legacy.max,legacy.allocation,need), "original exp3 safety agreement");
             auto work = v.available; std::vector<bool> done(5,false);
             for (const auto& s : r.steps) {
                 require(s.workBefore == work && !done[s.processId], "trace continuity");

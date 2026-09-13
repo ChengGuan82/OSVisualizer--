@@ -12,6 +12,8 @@ class QSlider;
 class QStackedWidget;
 class GanttChart;
 class FrameChart;
+class BankerWidget;
+class DiskSchedulerWidget;
 
 class MainWindow final : public QMainWindow {
 public:
@@ -31,6 +33,8 @@ private:
     void setCpuExample();
     std::vector<osv::Process> readProcesses() const;
     QStackedWidget* stack_{};
+    BankerWidget* banker_{};
+    DiskSchedulerWidget* disk_{};
     QTableWidget *input_{}, *cpuResults_{}, *cpuCompare_{}, *pageHistory_{}, *pageCompare_{};
     QComboBox *cpuAlgorithm_{}, *pageAlgorithm_{};
     QSpinBox *quantum_{}, *frameCount_{};

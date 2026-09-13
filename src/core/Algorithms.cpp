@@ -54,7 +54,7 @@ ScheduleResult StandardScheduler::run(const std::vector<Process>& input) const {
                 if (chosen == -1) { chosen = i; continue; }
                 if ((strategy_ == Scheduling::SJF && p[i].burst < p[chosen].burst) ||
                     (strategy_ == Scheduling::SRTF && remaining[i] < remaining[chosen]) ||
-                    (strategy_ == Scheduling::Priority && p[i].priority > p[chosen].priority)) chosen = i;
+                    (strategy_ == Scheduling::Priority && p[i].priority < p[chosen].priority)) chosen = i;
             }
         }
         if (chosen < 0) {

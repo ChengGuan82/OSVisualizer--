@@ -1,5 +1,7 @@
 #include "ui/MainWindow.h"
 #include "ui/Charts.h"
+#include "ui/BankerWidget.h"
+#include "ui/DiskSchedulerWidget.h"
 #include <QtWidgets>
 #include <stdexcept>
 
@@ -86,10 +88,12 @@ MainWindow::MainWindow() {
     auto* sidebar = new QFrame; sidebar->setObjectName("sidebar"); sidebar->setFixedWidth(214);
     auto* side = new QVBoxLayout(sidebar); side->setContentsMargins(22, 30, 22, 24); side->setSpacing(18);
     side->addWidget(label("OS Lab", "brand")); side->addWidget(label("ALGORITHM VISUALIZER", "sideText")); side->addSpacing(28);
-    auto* nav = new QListWidget; nav->addItems({"01   CPU 调度", "02   页面置换"}); side->addWidget(nav);
+    auto* nav = new QListWidget; nav->addItems({"01   CPU 调度", "02   页面置换", "03   银行家算法", "04   磁盘调度"}); side->addWidget(nav);
     side->addWidget(label("●  本地算法实验室", "sideBadge"));
-    side->addWidget(label("基于实验 5 / 实验 6 演进\nC++17 · Qt 6 · CMake\nv1.0  /  可复现的算法轨迹", "sideText"));
+    side->addWidget(label("基于实验 3 / 5 / 6 / 7 演进\nC++17 · Qt 6 · CMake\nv2.0  /  可复现的算法轨迹", "sideText"));
     stack_ = new QStackedWidget; stack_->addWidget(buildCpu()); stack_->addWidget(buildPages());
+    banker_=new BankerWidget;disk_=new DiskSchedulerWidget;
+    stack_->addWidget(osvui::scrollPage(banker_));stack_->addWidget(osvui::scrollPage(disk_));
     layout->addWidget(sidebar); layout->addWidget(stack_, 1); setCentralWidget(root);
     connect(nav, &QListWidget::currentRowChanged, this, [this](int row) { stopPlayback(); stack_->setCurrentIndex(row); });
     nav->setCurrentRow(0);
@@ -115,7 +119,7 @@ QWidget* MainWindow::buildCpu() {
     auto* inputHeading = new QHBoxLayout; inputHeading->addWidget(label("01  进程参数", "section")); inputHeading->addStretch();
     auto* add = button("＋ 进程"); auto* remove = button("删除选中"); auto* example = button("载入示例");
     inputHeading->addWidget(add); inputHeading->addWidget(remove); inputHeading->addWidget(example); content->addLayout(inputHeading);
-    input_ = table({"PID", "到达时间", "运行时间", "优先级（越大越优先）"}, true); input_->verticalHeader()->setDefaultSectionSize(26); input_->setFixedHeight(150); content->addWidget(input_);
+    input_ = table({"PID", "到达时间", "运行时间", "优先级（越小越优先）"}, true); input_->verticalHeader()->setDefaultSectionSize(26); input_->setFixedHeight(150); content->addWidget(input_);
     cpuMessage_ = label("", "message"); content->addWidget(cpuMessage_);
     cpuHelp_ = label("", "muted"); content->addWidget(cpuHelp_);
     cpuStats_ = label("", "stats"); outer->addWidget(cpuStats_);
@@ -229,7 +233,7 @@ void MainWindow::runCpu() {
         "SJF：每次从已到达进程中选运行时间最短者，非抢占；同值先到先服务。",
         "SRTF：新进程到达时比较剩余时间，必要时抢占；同值按到达时间、表格顺序。",
         "RR：每次最多运行一个时间片；片末先接收新到达进程，再将未完成进程放回队尾。",
-        "Priority：数值越大越优先，非抢占；同值按到达时间、表格顺序。"};
+        "Priority：数值越小越优先，非抢占；同值按到达时间、表格顺序。"};
     cpuHelp_->setText(explanations[cpuAlgorithm_->currentIndex()]);
     invalidateCpu();
     try {
@@ -390,5 +394,12 @@ bool MainWindow::smokeTest(const QString& directory) {
     if (!pages_.steps.empty() || !pageRefresh_.isActive()) return false;
     QMetaObject::invokeMethod(&pageRefresh_, "timeout", Qt::DirectConnection);
     if (pages_.steps.size() != 3 || pages_.steps[0].requestedPage != 4) return false;
+    if(!banker_->smokeTest()||!disk_->smokeTest())return false;
+    if(!directory.isEmpty()){
+        findChild<QListWidget*>()->setCurrentRow(2);banker_->showExampleStep(2);QApplication::processEvents();
+        if(!grab().save(directory+"/banker.png"))return false;
+        findChild<QListWidget*>()->setCurrentRow(3);disk_->showExampleStep(7);QApplication::processEvents();
+        if(!grab().save(directory+"/disk.png"))return false;
+    }
     return true;
 }

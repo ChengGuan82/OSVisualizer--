@@ -69,8 +69,14 @@ void testScheduling() {
     check(r.processes[0].completion == 14 && r.processes[1].completion == 7 && r.processes[2].completion == 4, "SRTF preemptions");
     r = cpu({{1, 0, 5, 1}, {2, 0, 2, 3}, {3, 0, 3, 2}}, Scheduling::SJF);
     check(r.timeline[0].pid == 2 && r.timeline[1].pid == 3, "SJF shortest ready first");
-    r = cpu({{1, 0, 5, 1}, {2, 1, 2, 10}, {3, 0, 3, 2}}, Scheduling::Priority);
-    check(r.timeline[0].pid == 3 && r.timeline[0].end == 3 && r.timeline[1].pid == 2, "priority high value first, nonpreemptive");
+    r = cpu({{1, 0, 5, 3}, {2, 1, 2, 0}, {3, 0, 3, 2}}, Scheduling::Priority);
+    check(r.timeline[0].pid == 3 && r.timeline[0].end == 3 && r.timeline[1].pid == 2, "priority lower value first, nonpreemptive");
+    r = cpu({{9,0,2,1},{2,0,1,1}},Scheduling::Priority);
+    check(r.timeline[0].pid==9,"priority stable equal-priority tie");
+    r = cpu({{1,0,2,0},{2,1,5,0}},Scheduling::SRTF);
+    check(r.timeline[0].pid==1 && r.timeline[0].end==2,"SRTF no preemption by longer arrival");
+    r = cpu({{8,0,3,0},{2,1,2,0}},Scheduling::SRTF);
+    check(r.timeline[0].pid==8 && r.timeline[0].end==3,"SRTF equal remaining favors earlier arrival");
     r = cpu({{9, 0, 2, 0}, {2, 0, 2, 0}}, Scheduling::SJF); check(r.timeline[0].pid == 9, "stable tie by input order");
     r = cpu({{1, 0, 2, 0}, {2, 1, 1, 0}}, Scheduling::RR, 100); check(r.processes[0].completion == 2, "large RR quantum");
     for (int a = 0; a < 5; ++a) {
@@ -89,6 +95,10 @@ void testPaging() {
     check(page(refs, 3, Replacement::FIFO).faults == 10, "FIFO textbook fixture");
     check(page(refs, 3, Replacement::LRU).faults == 9, "LRU textbook fixture");
     check(page(refs, 3, Replacement::OPT).faults == 7, "OPT textbook fixture");
+    auto opt = page({1,2,3,1},2,Replacement::OPT);
+    check(opt.steps[2].replacedPage==2,"OPT chooses page never requested again");
+    opt = page({1,2,3},2,Replacement::OPT);
+    check(opt.steps[2].replacedPage==1,"OPT simultaneous never-again tie uses frame order");
     auto clock = page({1, 2, 3, 1, 4}, 3, Replacement::CLOCK);
     check(clock.faults == 4 && clock.steps.back().frames == std::vector<int>({4, 2, 3}), "CLOCK cyclic victim");
     check(clock.steps.back().clearedFrames == std::vector<int>({0, 1, 2}) && clock.steps.back().hand == 1, "CLOCK clears reference bits and advances");

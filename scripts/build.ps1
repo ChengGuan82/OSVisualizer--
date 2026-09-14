@@ -20,7 +20,7 @@ if ($LASTEXITCODE -ne 0) { throw '测试运行库部署失败' }
 Copy-Item -LiteralPath "$QtRoot\plugins\platforms\qoffscreen.dll" -Destination "$projectRoot\build\platforms" -Force
 & (Join-Path (Split-Path $CMake) 'ctest.exe') --test-dir "$projectRoot\build" --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw '测试失败' }
-$packageRoot = Join-Path $projectRoot 'Release\v1.0'
+$packageRoot = Join-Path $projectRoot 'Release\v2.0'
 New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 Copy-Item -LiteralPath "$projectRoot\build\OSVisualizer.exe" -Destination $packageRoot -Force
 & "$QtRoot\bin\windeployqt.exe" --release --no-translations --no-opengl-sw --compiler-runtime "$packageRoot\OSVisualizer.exe"

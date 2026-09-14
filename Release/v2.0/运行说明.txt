@@ -1,0 +1,11 @@
+OS Algorithm Visualizer v2.0 · Windows x64
+
+双击当前文件夹中的 OSVisualizer.exe 启动。
+无需安装 Qt 或编译器。请保留当前文件夹内全部 DLL 和插件子目录。
+
+包含 CPU 调度、页面置换、银行家安全性检查、磁盘调度。
+打开即有示例；输入变更后自动重新计算。
+v2 的 Priority 规则为数字越小越优先，与 v1 相反。
+
+此包基于现有课程实验迁移重构，详见 docs/MIGRATION.md。
+源代码仓库：https://github.com/ChengGuan82/OSVisualizer

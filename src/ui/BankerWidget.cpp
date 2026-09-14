@@ -101,9 +101,13 @@ void BankerWidget::render(int step){
 }
 void BankerWidget::showExampleStep(int step){example_->setCurrentIndex(0);loadExample();replay_->seek(step);}
 bool BankerWidget::smokeTest(){
+    showExampleStep(0);if(!replay_->smokeTest())return false;
     showExampleStep(2);if(!valid_||!result_.safe||work_->item(0,4)->text()!="5")return false;
     replay_->seek(1);if(work_->item(0,4)->text()!="3")return false;
     for(int i=1;i<3;++i){example_->setCurrentIndex(i);loadExample();if(!valid_||result_.safe!=(i==2))return false;}
     max_->item(0,0)->setText("-1");calculate();if(valid_||need_->item(0,0)->text()!="—")return false;
+    showExampleStep(0);resourceCount_->setValue(1);processCount_->setValue(1);
+    if(!valid_||result_.need.size()!=1||result_.need[0].size()!=1)return false;
+    available_->setText("");calculate();if(valid_)return false;
     showExampleStep(2);return true;
 }

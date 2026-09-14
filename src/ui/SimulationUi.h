@@ -43,6 +43,7 @@ inline QWidget* scrollPage(QWidget* page) {
 class ReplayBar final : public QWidget {
 public:
     std::function<void(int)> changed;
+    std::function<void(bool)> playingChanged;
     explicit ReplayBar(QWidget* parent=nullptr):QWidget(parent) {
         auto* row=new QHBoxLayout(this); row->setContentsMargins(0,0,0,0);
         previous_=button("← 上一步"); play_=button("自动执行"); next_=button("下一步 →");
@@ -55,15 +56,25 @@ public:
         connect(play_,&QPushButton::clicked,this,[this]{
             if(timer_.isActive()){stop();return;} if(!count_)return;
             if(current_==count_)seek(0);
-            timer_.start(); play_->setText("暂停");
+            timer_.start(); play_->setText("暂停");if(playingChanged)playingChanged(true);
         });
         connect(&timer_,&QTimer::timeout,this,[this]{updateIndex(current_+1);});
         setCount(0);
     }
     void setCount(int n) {stop();count_=n;updateIndex(0);}
     void seek(int index){stop();updateIndex(index);}
-    void stop(){timer_.stop();play_->setText("自动执行");}
+    void stop(){bool active=timer_.isActive();timer_.stop();play_->setText("自动执行");if(active&&playingChanged)playingChanged(false);}
     int current()const{return current_;}
+    bool smokeTest(){
+        if(count_<2)return false;
+        seek(0);next_->click();if(current_!=1)return false;
+        previous_->click();if(current_!=0)return false;
+        play_->click();if(!timer_.isActive())return false;
+        QMetaObject::invokeMethod(&timer_,"timeout",Qt::DirectConnection);
+        if(current_!=1)return false;
+        slider_->setValue(2);if(current_!=2||timer_.isActive())return false;
+        seek(0);return true;
+    }
 protected:
     void hideEvent(QHideEvent* event)override{stop();QWidget::hideEvent(event);}
 private:

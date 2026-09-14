@@ -396,9 +396,10 @@ bool MainWindow::smokeTest(const QString& directory) {
     if (pages_.steps.size() != 3 || pages_.steps[0].requestedPage != 4) return false;
     if(!banker_->smokeTest()||!disk_->smokeTest())return false;
     if(!directory.isEmpty()){
+        resize(1420,1160);
         findChild<QListWidget*>()->setCurrentRow(2);banker_->showExampleStep(2);QApplication::processEvents();
         if(!grab().save(directory+"/banker.png"))return false;
-        findChild<QListWidget*>()->setCurrentRow(3);disk_->showExampleStep(7);QApplication::processEvents();
+        findChild<QListWidget*>()->setCurrentRow(3);disk_->showExampleStep(10);QApplication::processEvents();
         if(!grab().save(directory+"/disk.png"))return false;
     }
     return true;

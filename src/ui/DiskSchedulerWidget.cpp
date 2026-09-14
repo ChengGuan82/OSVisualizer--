@@ -1,5 +1,6 @@
 #include "ui/DiskSchedulerWidget.h"
 #include <QPainter>
+#include "ui/DiskPlatterWidget.h"
 #include <QPaintEvent>
 #include <cmath>
 using namespace osvui;
@@ -50,12 +51,12 @@ DiskSchedulerWidget::DiskSchedulerWidget(QWidget* parent):QWidget(parent){
     requests_=new QLineEdit;requests_->setPlaceholderText("磁道请求，空格或逗号分隔；留空表示无请求");inputs->addWidget(requests_);
     inputs->addWidget(label("磁道范围为 0～最大磁道号。SCAN 到边界再反向；C-SCAN 回绕也计入移动量。最后一个请求完成后停止；重复请求分别服务。"));
     status_=label("","stats");root->addWidget(status_);message_=label("");root->addWidget(message_);
-    QVBoxLayout* visual;root->addWidget(card(visual),1);visual->addWidget(label("磁头路径 · 横轴为磁道，纵轴为移动步骤","section"));
-    auto* split=new QHBoxLayout;auto* scroll=new QScrollArea;scroll->setWidgetResizable(true);scroll->setMinimumHeight(290);scroll->setMaximumHeight(360);
-    chart_=new DiskPathChart;scroll->setWidget(chart_);split->addWidget(scroll,3);
+    QVBoxLayout* visual;root->addWidget(card(visual),1);visual->addWidget(label("盘片与磁头 · 逐步观察寻道","section"));
+    auto* split=new QHBoxLayout;auto* scroll=new QScrollArea;pathScroll_=scroll;scroll->setWidgetResizable(true);scroll->setMinimumHeight(290);scroll->setMaximumHeight(400);
+    chart_=new DiskPathChart;scroll->setWidget(chart_);auto* tabs=new QTabWidget;platter_=new DiskPlatterWidget;tabs->addTab(platter_,"盘片与磁头");tabs->addTab(scroll,"磁道路径");split->addWidget(tabs,3);
     moves_=table({"步骤","起点 → 终点","距离","类型"});moves_->setMinimumHeight(290);moves_->setMaximumHeight(360);split->addWidget(moves_,2);visual->addLayout(split);
     replay_=new ReplayBar;visual->addWidget(replay_);sequence_=label("");visual->addWidget(sequence_);
-    visual->addWidget(label("绿色为已执行请求，橙色为边界移动，橙色虚线为回绕；灰色为未执行路径。上一步或拖动进度会暂停；点击表格行可跳转。"));
+    visual->addWidget(label("磁头沿半径寻道，盘片旋转使扇区经过磁头。此处为单盘面示意，磁道间距和转速不按实物比例，也不计算旋转延迟。绿色表示请求，橙色表示边界或回绕；点击表格可跳转，上一步或拖动进度会暂停。"));
     QVBoxLayout* compare;root->addWidget(card(compare));compare->addWidget(label("同组输入 · 四策略对比（完整结果）","section"));
     comparison_=table({"算法","总移动量","每请求平均移动量"});comparison_->setFixedHeight(166);compare->addWidget(comparison_);
     refresh_.setSingleShot(true);refresh_.setInterval(350);connect(&refresh_,&QTimer::timeout,this,[this]{calculate();});
@@ -65,7 +66,7 @@ DiskSchedulerWidget::DiskSchedulerWidget(QWidget* parent):QWidget(parent){
     connect(direction_,&QComboBox::currentIndexChanged,this,[this]{calculate();});
     connect(load,&QPushButton::clicked,this,[this]{loadExample();});
     connect(moves_,&QTableWidget::cellClicked,this,[this](int row,int){replay_->seek(row+1);});
-    replay_->changed=[this](int step){render(step);};loadExample();
+    replay_->changed=[this](int step){render(step);};replay_->playingChanged=[this](bool playing){platter_->setPlaying(playing);};loadExample();
 }
 void DiskSchedulerWidget::loadExample(){
     QSignalBlocker a(head_),b(maximum_),c(requests_),d(direction_);
@@ -73,7 +74,7 @@ void DiskSchedulerWidget::loadExample(){
     direction_->setEnabled(algorithm_->currentIndex()>=2);calculate();
 }
 void DiskSchedulerWidget::invalidate(){
-    valid_=false;result_={};replay_->setCount(0);moves_->setRowCount(0);comparison_->setRowCount(0);chart_->display({}, {},0);
+    valid_=false;result_={};replay_->setCount(0);moves_->setRowCount(0);comparison_->setRowCount(0);chart_->display({}, {},0);platter_->display({}, {},0);
     status_->setText("等待有效输入");message_->setText("修改后自动重新计算，旧结果已清除。");sequence_->clear();
 }
 void DiskSchedulerWidget::calculate(){
@@ -94,17 +95,20 @@ void DiskSchedulerWidget::calculate(){
 void DiskSchedulerWidget::render(int step){
     if(!valid_)return;
     int distance=0;for(int i=0;i<step;++i)distance+=result_.moves[i].distance;
-    chart_->display(input_,result_,step);
+    chart_->display(input_,result_,step);platter_->display(input_,result_,step);
+    pathScroll_->ensureVisible(0,45+step*30,0,35);
     status_->setText(QString("当前磁头  %1   ·   已移动  %2   /   全程移动  %3   ·   每请求平均  %4").arg(step?result_.moves[step-1].to:input_.head).arg(distance).arg(result_.totalMovement).arg(QString::number(result_.averageMovement,'f',2)));
     sequence_->setText("完整服务顺序（不含边界与回绕点）："+(result_.sequence.empty()?QString("无请求"):vectorText(result_.sequence)));
     message_->setText(input_.requests.empty()?"没有请求，磁头保持原位，总移动量和平均移动量均为 0。":QString("%1：方向设置仅影响 SCAN / C-SCAN；SSTF 距离相同时按输入顺序。平均值 = 总移动量 ÷ 请求数。").arg(algorithm_->currentText()));
     moves_->clearSelection();if(step){moves_->selectRow(step-1);moves_->scrollToItem(moves_->item(step-1,0));}
 }
-void DiskSchedulerWidget::showExampleStep(int step){algorithm_->setCurrentIndex(3);loadExample();replay_->seek(step);}
+void DiskSchedulerWidget::showExampleStep(int step){algorithm_->setCurrentIndex(3);loadExample();replay_->seek(step);platter_->settle();}
 bool DiskSchedulerWidget::smokeTest(){
+    loadExample();if(!replay_->smokeTest())return false;
     for(int a=0;a<4;++a){algorithm_->setCurrentIndex(a);loadExample();if(!valid_||result_.sequence.size()!=8||comparison_->rowCount()!=4)return false;}
     if(result_.totalMovement!=382)return false;
-    replay_->seek(2);if(replay_->current()!=2)return false;
+    if(comparison_->item(0,1)->text()!="640"||comparison_->item(1,1)->text()!="236")return false;
+    replay_->seek(2);if(replay_->current()!=2)return false;for(int i=0;i<=int(result_.moves.size());++i){replay_->seek(i);if(platter_->targetTrack()!=(i?result_.moves[i-1].to:input_.head))return false;}
     direction_->setCurrentIndex(1);if(result_.totalMovement!=386)return false;
     requests_->setText("");calculate();if(!valid_||result_.totalMovement!=0||!result_.moves.empty())return false;
     requests_->setText("200");calculate();if(valid_||comparison_->rowCount()!=0)return false;

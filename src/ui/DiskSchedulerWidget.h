@@ -2,6 +2,7 @@
 #include "core/Disk.h"
 #include "ui/SimulationUi.h"
 class DiskPathChart;
+class DiskPlatterWidget;
 class DiskSchedulerWidget final : public QWidget {
 public:
     explicit DiskSchedulerWidget(QWidget* parent=nullptr);
@@ -18,6 +19,8 @@ private:
     QLabel *status_,*message_,*sequence_;
     QTableWidget *comparison_,*moves_;
     DiskPathChart* chart_;
+    DiskPlatterWidget* platter_;
+    QScrollArea* pathScroll_;
     osvui::ReplayBar* replay_;
     QTimer refresh_;
     osv::DiskInput input_;

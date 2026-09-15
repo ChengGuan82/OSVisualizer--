@@ -90,7 +90,7 @@ MainWindow::MainWindow() {
     side->addWidget(label("OS Lab", "brand")); side->addWidget(label("ALGORITHM VISUALIZER", "sideText")); side->addSpacing(28);
     auto* nav = new QListWidget; nav->addItems({"01   CPU 调度", "02   页面置换", "03   银行家算法", "04   磁盘调度"}); side->addWidget(nav);
     side->addWidget(label("●  本地算法实验室", "sideBadge"));
-    side->addWidget(label("基于实验 3 / 5 / 6 / 7 演进\nC++17 · Qt 6 · CMake\nv2.0  /  可复现的算法轨迹", "sideText"));
+    side->addWidget(label("基于实验 3 / 5 / 6 / 7 演进\nC++17 · Qt 6 · CMake\nv2.1  /  可复现的算法轨迹", "sideText"));
     stack_ = new QStackedWidget; stack_->addWidget(buildCpu()); stack_->addWidget(buildPages());
     banker_=new BankerWidget;disk_=new DiskSchedulerWidget;
     stack_->addWidget(osvui::scrollPage(banker_));stack_->addWidget(osvui::scrollPage(disk_));

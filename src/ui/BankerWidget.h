@@ -1,6 +1,7 @@
 #pragma once
 #include "core/Banker.h"
 #include "ui/SimulationUi.h"
+class BankerFlow;
 class BankerWidget final : public QWidget {
 public:
     explicit BankerWidget(QWidget* parent=nullptr);
@@ -8,6 +9,14 @@ public:
     void showExampleStep(int index);
 private:
     void resizeMatrices();
+    void rebuildVisuals();
+    void renderVisuals(int step);
+    BankerFlow* flow_;
+    QGridLayout* cards_;
+    QHBoxLayout* bars_;
+    std::vector<QLabel*> texts_;
+    std::vector<QProgressBar*> gauges_;
+    std::vector<QVariantAnimation*> animations_;
     void loadExample();
     void invalidate();
     void calculate();

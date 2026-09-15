@@ -1,4 +1,4 @@
-﻿param(
+param(
     [string]$QtRoot = 'F:\tools\QT\6.9.0\mingw_64',
     [string]$CompilerRoot = 'F:\tools\QT\Tools\mingw1310_64',
     [string]$CMake = 'F:\tools\QT\Tools\CMake_64\bin\cmake.exe',
@@ -20,7 +20,7 @@ if ($LASTEXITCODE -ne 0) { throw '测试运行库部署失败' }
 Copy-Item -LiteralPath "$QtRoot\plugins\platforms\qoffscreen.dll" -Destination "$projectRoot\build\platforms" -Force
 & (Join-Path (Split-Path $CMake) 'ctest.exe') --test-dir "$projectRoot\build" --output-on-failure
 if ($LASTEXITCODE -ne 0) { throw '测试失败' }
-$packageRoot = Join-Path $projectRoot 'Release\v2.0'
+$packageRoot = Join-Path $projectRoot 'Release\v2.1'
 New-Item -ItemType Directory -Force -Path $packageRoot | Out-Null
 Copy-Item -LiteralPath "$projectRoot\build\OSVisualizer.exe" -Destination $packageRoot -Force
 & "$QtRoot\bin\windeployqt.exe" --release --no-translations --no-opengl-sw --compiler-runtime "$packageRoot\OSVisualizer.exe"
